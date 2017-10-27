@@ -2,6 +2,10 @@
 <<
 #include <string>
 #include <iostream>
+#include <cstdlib>
+#include <cmath>
+#include <list>
+#include <map>
 using namespace std;
 
 // struct to store information about tokens
@@ -23,9 +27,6 @@ AST* createASTnode(Attrib* attr, int ttype, char *textt);
 >>
 
 <<
-#include <cstdlib>
-#include <cmath>
-#include <list>
 
 //global structures
 AST *root;
@@ -39,6 +40,8 @@ typedef struct {
 	string id;
 	list<slope> definition;
 } mountain;
+
+map<string,mountain> mountainRepository;
 
 /*
 typedef struct {
@@ -55,9 +58,9 @@ int calculateMountainHeight(mountain mountainX);
 void printMountainHeight(mountain mountainX);
 
 //FuncionsDebugar
-void printASTChilds(AST *a);
-void printAST(AST *a, int index);
-void printSlope(slope);
+void printASTChildsDebug(AST *a);
+void printASTDebug(AST *a, int index);
+void printSlopeDebug(slope);
 void printMountain(mountain);
 void printMountainDef(mountain);
 
@@ -170,8 +173,10 @@ bool evaluateAssignationExpression(AST *a) {
 		//cout << "Debug: "  << child(a, 0)->kind <<" "<<child(a, 0)->text<< endl;
 	AST *id = child(a, 0);
 	mountain mountainX;
-	createMountainRecursive(mountainX, child(a,1));
 	mountainX.id = id->text;
+	createMountainRecursive(mountainX, child(a,1));
+
+	mountainRepository[mountainX.id] = mountainX; 
 
 	printMountain(mountainX);
 	printPrettyMountain(mountainX);
@@ -184,7 +189,7 @@ bool evaluateAssignationExpression(AST *a) {
 
 void createMountainRecursive(mountain& mountainX, AST *a) {
 	slope slopeX;
-		cout << "Debug: "  << a->kind << endl;
+		//cout << "Debug: "  << a->kind << endl;
 	if (a->kind == ";") {
 		int inst = 0;
 		while(child(a, inst)) {
@@ -193,7 +198,7 @@ void createMountainRecursive(mountain& mountainX, AST *a) {
 		}
 	}
 	else if (a->kind == "*") {
-			//printASTChilds(a);
+			//printASTChildsDebug(a);
 		slopeX.length = atoi(child(a, 0)->text.c_str());
 		slopeX.kind = child(a, 1)->kind;
 		mountainX.definition.push_back(slopeX);
@@ -201,8 +206,8 @@ void createMountainRecursive(mountain& mountainX, AST *a) {
 	}
 	//Id d'una altre muntanya
 	else if (a->kind == "id") {
-		
-
+		list<slope> copiedDefinition = mountainRepository[a->text].definition;
+		mountainX.definition.insert(mountainX.definition.end(), copiedDefinition.begin(), copiedDefinition.end());
 	}
 }
 
@@ -210,7 +215,7 @@ int calculateMountainHeight (mountain mountainX) {
 	int top = 0, index = 0, bottom = 0; 
 	std::list<slope>::iterator it;
 	for (it=mountainX.definition.begin(); it != mountainX.definition.end(); ++it) {
-		//printSlope(*it);
+		//printSlopeDebug(*it);
 		int sLength = (*it).length;
 		//cout << "Debug: k: " << (*it).kind << " l: " << sLength << " t: " << top << " i: " << index << " b: " << bottom << endl;
 		if((*it).kind == "/") {
@@ -259,21 +264,21 @@ void printMountainDef(mountain mountainX) {
   printEndl();
 }
 
-void printASTChilds(AST *a) {
-	cout << "Debug: " << endl;
+void printASTChildsDebug(AST *a) {
+	//cout << "Debug: " << endl;
 	int i = 0;
 	while (child(a, i)) {
-		printAST(child(a, i), i);
+		printASTDebug(child(a, i), i);
 		++i;
 	}
 }
 
-void printAST(AST *a, int index) {
+void printASTDebug(AST *a, int index) {
 	cout << "Debug: " << index << " - k " << a->kind << " ";
 	cout << "t " << a->text << endl;
 }
 
-void printSlope(slope slopeX) {
+void printSlopeDebug(slope slopeX) {
 	cout << "Debug: " << " - k " << slopeX.kind << " ";
 	cout << "t " << slopeX.length << endl;
 }
