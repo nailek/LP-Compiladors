@@ -1,0 +1,42 @@
+M1 is 1*/;2*-;3*\
+M2 is 3*/;4*-;3*\
+M12 is #M1;#M2
+
+M4 is Peak(2,4,2)
+M5 is Valley(3,4,3)
+
+if (Match(#M4,#M5) OR Height(#M12) == 6) 
+	M6 is #M4;#M5
+	Draw(#M6)
+endif
+
+if (1 == 1) 
+	Draw(#M1)
+endif
+
+if (Match(#M4,#M4))
+	Draw(#M4)
+endif
+
+if (Match(#M1,#M2))
+	Draw(#M1)
+	Draw(#M2)
+endif
+
+if (Height(#M4) == Height(#M4))
+	Draw(#M4)
+endif
+
+if (Height(#M1) == Height(#M2))
+	Draw(#M1)
+	Draw(#M2)
+endif
+
+if (Height(#M2) == 3)
+	Draw(#M2)
+endif
+
+if (Match(#M4,#M5) OR Height(#M12) == 5 OR Height(#M1) == 3) 
+	Draw(#M4)
+	Draw(#M5)
+endif
