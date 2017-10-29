@@ -1,0 +1,32 @@
+M1 is 1*/
+
+Draw (#M1)
+
+if (NOT Wellformed(M1))
+	Complete(M1)
+endif
+
+Draw(#M1)
+
+if (Wellformed(M1))
+	Draw(#M1)
+endif
+
+
+M2 is 1*/;2*-
+
+Draw (#M2)
+
+if (NOT Wellformed(M2))
+	Complete(M2)
+	Draw(#M2)
+endif
+
+M3 is 1*/;2*-;3*\
+
+Draw (#M3)
+
+if (NOT Wellformed(M3))
+	Complete(M3)
+	Draw(#M3)
+endif

@@ -76,7 +76,8 @@ slope createSlopeCim(int lengthX);
 slope createSlopeDown(int lengthX);
 
 int calculateMountainHeight(mountain& mountainX);
-void printMountainHeight(mountain& mountainX);
+bool wellformed(mountain& mountainX);
+void complete(mountain& mountainX);
 
 
 //FuncionsDebugar
@@ -89,6 +90,7 @@ void printMountainPretty(mountain& mountainX);
 void printMountainDefPretty(mountain& mountainX);
 void printMountain(mountain&);
 void printMountainDef(mountain& mountainX);
+void printMountainHeight(mountain& mountainX);
 
 //FuncionsAuxiliars
 void printEndl();
@@ -202,7 +204,7 @@ void treatExpression(AST *a) {
 				evaluateIfExpression(child(a, inst));
 			else if (childKind == "while")
 				evaluateWhileExpression(child(a, inst));
-			else if (childKind == "Draw")
+			else if (childKind == "Draw" || childKind == "Complete")
 				evaluateCallExpression(child(a, inst));
 		}
 		catch(exception& e) { // Capture all exceptions and prints the error message. Program will keep going after that.
@@ -375,6 +377,10 @@ bool evaluateBoolExpression(AST* a) {
 		return evaluateBoolExpression(child(a, 0)) || evaluateBoolExpression(child(a, 1));
 	else if (a->kind == "AND")
 		return evaluateBoolExpression(child(a, 0)) && evaluateBoolExpression(child(a, 1));
+	else if (a->kind == "NOT") {
+		//cout << "Debug: NOT: " << !evaluateBoolExpression(child(a, 0)) << endl;
+		return !evaluateBoolExpression(child(a, 0));
+	}
 	else if (a->kind == "==") {
 		//printASTTreeDebug(a);
 		return (evaluateNumberExpression(child(a, 0)) == evaluateNumberExpression(child(a, 1)));
@@ -394,6 +400,10 @@ bool evaluateBoolExpression(AST* a) {
 	else if (a->kind == "<=") {
 		//printASTTreeDebug(a);
 		return (evaluateNumberExpression(child(a, 0)) <= evaluateNumberExpression(child(a, 1)));
+	}
+	else if (a->kind == "Wellformed") {
+		//printASTTreeDebug(a);		
+		return wellformed(mountainRepository[child(a, 0)->text]);
 	}
 	else 
 		return evaluateNumberExpression(a);
@@ -427,15 +437,80 @@ int evaluateNumberExpression(AST *a) {
 
 void evaluateCallExpression(AST *a) {
 	if(a->kind == "Draw") {
-		mountain mountainX = createMountain(child(a, 0)->text, child(a, 0));
-		printMountainDefPretty(mountainX);
+		printMountainDefPretty(mountainRepository[child(a, 0)->text]);
+		//cout << "Debug: Finished Drawing" << endl;
+	}
+	else if(a->kind == "Complete") {
+		complete(mountainRepository[child(a, 0)->text]);
+	}
+}
+
+bool wellformed(mountain& mountainX) {
+	std::list<slope>::iterator itBegin;
+	itBegin = mountainX.def.begin();
+	std::list<slope>::iterator itEnd;
+	itEnd = --mountainX.def.end();
+
+	bool wellformed;
+	if(itBegin == itEnd) 
+		wellformed = false;
+	else if(itBegin == --itEnd) 
+		wellformed = false;
+	else {
+		wellformed = true;
+		std::list<slope>::iterator it;
+		int i = 0;
+		for (it=--mountainX.def.end(); it != mountainX.def.begin(); --it) {
+			//cout << "Debug: wellformed: i: " << i << " k " << (*it).kind << endl;
+			if(i == 0 && (*it).kind != "\\") 
+				wellformed = false;
+			else if (i == 1 && (*it).kind != "-") 
+				wellformed = false;
+			else if (i == 2 && (*it).kind != "/") 
+				wellformed = false;
+			i++;
+		}
+	}
+	//cout << "Debug: Wellformed: " << wellformed << endl;
+	return wellformed;
+}
+
+void complete(mountain& mountainX) {
+	std::list<slope>::iterator itBegin;
+	itBegin=mountainX.def.begin();
+
+	std::list<slope>::iterator itEnd;
+	itEnd=--mountainX.def.end();
+
+	if(itBegin == itEnd) {
+		//cout << "Debug: complete 1:" << endl;
+		if((*itBegin).kind != "/") addBackSlopeUp(mountainX.def, 1);
+		addBackSlopeCim(mountainX.def, 1);
+		addBackSlopeDown(mountainX.def, 1);
+	}
+	else if(itBegin == --itEnd) {
+		//cout << "Debug: complete 2:" << endl;
+		if((*itBegin).kind != "/") {
+			addBackSlopeUp(mountainX.def, 1);
+			++itBegin;
+			if((*itBegin).kind != "-") {
+				addBackSlopeCim(mountainX.def, 1);
+			}
+		}
+		addBackSlopeDown(mountainX.def, 1);
+	}
+	else {
+		//cout << "Debug: complete X:" << endl;
+		addBackSlopeUp(mountainX.def, 1);
+		addBackSlopeCim(mountainX.def, 1);
+		addBackSlopeDown(mountainX.def, 1);
 	}
 }
 
 //// Prints //// ////////////////////////////////////////////////
 void printMountainRepository() {
 	for(std::map<string,mountain>::iterator it = mountainRepository.begin(); it != mountainRepository.end(); ++it) {
-		//printMountain(it->second);
+		//printMountain(it->second);	
 		printMountainPretty(it->second);
 		//printMountainDef(mountainX);
 	}
@@ -478,8 +553,8 @@ void printMountainDefPretty(mountain& mountainX) {
 		}
 		else if(it->kind == "\\") {
 			for (int k = 0; k < (*it).length; ++k) {
-				i++;
 				//cout << "Debug: \\ i: " << i << " j: " << j << endl;
+				i++;
 				mountainPrint[i][j] = '\\';
 				j++;
 			}
