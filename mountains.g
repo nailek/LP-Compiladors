@@ -52,9 +52,13 @@ typedef struct {
 } peak_valley; 
 */
 
-void treatMountain(AST*);
+void treatExpression(AST*);
 bool evaluateAssignationExpression(AST*);
+bool evaluateIfExpression(AST*);
+bool evaluateBoolExpression(AST*);
 int evaluateNumberExpression(AST *a);
+void evaluateCallExpression(AST *a);
+
 void createMountainRecursive(mountain& mountainX, AST *a);
 
 slope createSlopeUp(int lengthX);
@@ -66,7 +70,8 @@ void printMountainHeight(mountain& mountainX);
 
 
 //FuncionsDebugar
-void printASTChildsDebug(int level, AST *a);
+void printASTTreeDebug(AST *a);
+void printASTTreeRecursiveDebug(int level, AST *a, int index);
 void printASTDebug(int level, AST *a, int index);
 void printSlopeDebug(slope);
 void printMountainPretty(mountain& mountainX);
@@ -160,16 +165,16 @@ void ASTPrint(AST *a) {
   }
 }
 
-//// Main //// ////////////////////////////////////////////////////////////
+//// Main //// //// //// //// //// //// //// //// //// //// //// ////
 
 int main() {
   root = NULL;
   ANTLR(mountains(&root), stdin);
   ASTPrint(root);
-  treatMountain(root);
+  treatExpression(root);
 }
 
-void treatMountain(AST *a) {
+void treatExpression(AST *a) {
 	int inst = 0;
 		//cout << "Debug: "  << child(a, inst)->kind << endl;
 	while(child(a, inst)) {
@@ -177,8 +182,11 @@ void treatMountain(AST *a) {
 			string childKind = child(a, inst)->kind;
 			if (childKind == "is") 
 				evaluateAssignationExpression(child(a, inst));
-			else if (childKind == "if") ;
+			else if (childKind == "if") 
+				evaluateIfExpression(child(a, inst));
 			else if (childKind == "wihle") ;
+			else if (childKind == "Draw")
+				evaluateCallExpression(child(a, inst));
 		}
 		catch(exception& e) { // Capture all exceptions and prints the error message. Program will keep going after that.
 			cout << e.what() << endl;
@@ -191,7 +199,7 @@ void treatMountain(AST *a) {
 
 bool evaluateAssignationExpression(AST *a) {
 	//Guardar num!!!
-		//cout << "Debug: "  << child(a, 0)->kind <<" "<<child(a, 0)->text<< endl;
+		//printASTTreeDebug(a);
 	if(child(a, 1)->kind == "intconst") {
 		variableRepository[child(a, 0)->text] = intFromString(child(a, 1)->text);
 		//cout << "Debug: id: " << child(a, 0)->text << "  value: " << intFromString(child(a, 1)->text) << "  value map: " << variableRepository[child(a, 0)->text] << endl;
@@ -225,7 +233,7 @@ void createMountainRecursive(mountain& mountainX, AST *a) {
 		}
 	}
 	else if (a->kind == "*") {
-			//printASTChildsDebug(0,a);
+			//printASTTreeDebug(a);
 		slopeX.length = intFromString(child(a, 0)->text);
 		slopeX.kind = child(a, 1)->kind;
 		mountainX.def.push_back(slopeX);
@@ -238,7 +246,7 @@ void createMountainRecursive(mountain& mountainX, AST *a) {
 	}
 	else if (a->kind == "Peak") {
 		int child1, child2, child3;
-		//printASTChildsDebug(0, a);
+		//printASTTreeDebug(a);
 
 		child1 = evaluateNumberExpression(child(a, 0));
 		child2 = evaluateNumberExpression(child(a, 1));
@@ -248,7 +256,7 @@ void createMountainRecursive(mountain& mountainX, AST *a) {
 	}
 	else if (a->kind == "Valley") {
 		int child1, child2, child3;
-		//printASTChildsDebug(0, a);
+		//printASTTreeDebug(a);
 
 		child1 = evaluateNumberExpression(child(a, 0));
 		child2 = evaluateNumberExpression(child(a, 1));
@@ -284,7 +292,68 @@ int calculateMountainHeight (mountain& mountainX) {
 	return top + abs(bottom);
 }
 
-//Prints:
+//// Evaluate If Espression //// ///////////////////////////////////
+
+bool evaluateIfExpression(AST *a) {
+	//printASTTreeDebug(a);
+	if(evaluateBoolExpression(child(a, 0))) {
+		//cout << "Debug: if: true" << endl;
+		treatExpression(child(a, 1));
+	}
+	else 
+		//cout << "Debug: if: false" << endl;
+	printEndl();
+}
+
+//// Evaluate Bool Espression //// /////////////////////////////////
+
+bool evaluateBoolExpression(AST* a) {
+	int child1, child2;
+	if (a->kind == "OR")
+		return evaluateBoolExpression(child(a, 0)) || evaluateBoolExpression(child(a, 1));
+	else if (a->kind == "AND")
+		return evaluateBoolExpression(child(a, 0)) && evaluateBoolExpression(child(a, 1));
+	else if (a->kind == "==") {
+		//printASTTreeDebug(a);
+		return (evaluateNumberExpression(child(a, 0)) == evaluateNumberExpression(child(a, 1)));
+	}
+	else 
+		return evaluateNumberExpression(a);
+}
+
+//// Evaluate Number Expression //// ///////////////////////////////
+
+int evaluateNumberExpression(AST *a) {
+	if(a->kind == "intconst") 
+		return intFromString(a->text);
+	else if (a->kind == "+") 
+		return evaluateNumberExpression(child(a, 0)) + evaluateNumberExpression(child(a, 1));
+	else if (a->kind == "Match") {
+		int height1, height2;
+		height1 = calculateMountainHeight(mountainRepository[child(a, 0)->text]);
+		height2 = calculateMountainHeight(mountainRepository[child(a, 1)->text]);
+		//cout << "Debug: Match: h1: " << height1 << " h2: " << height2 << endl;
+		return height1 == height2;
+	}
+	else if (a->kind == "Height") {
+		//cout << "Debug: Height: n: " << child(a, 0)->text << " h: " << calculateMountainHeight(mountainRepository[child(a, 0)->text]) << endl;
+		return calculateMountainHeight(mountainRepository[child(a, 0)->text]);
+	}
+	else {
+		//cout << "Debug: variable name: " << a->text << " value: " << variableRepository[a->text] << endl;
+		return variableRepository[a->text];
+	}
+}
+
+//// Evaluate Call Expression //// ///////////////////////////////
+
+void evaluateCallExpression(AST *a) {
+	if(a->kind == "Draw") {
+		printMountain(mountainRepository[child(a, 0)->text]);
+	}
+}
+
+//// Prints //// ////////////////////////////////////////////////
 void printMountainHeight(mountain& mountainX) {
 	cout << "l'altitut final de " << mountainX.id;
 	cout << " és: " << calculateMountainHeight(mountainX) << endl << endl;
@@ -312,14 +381,19 @@ void printMountainDef(list<slope>& mountainDef) {
   printEndl();
 }
 
-//Fuincions Debugar
+//// Funcions Debugar //// ///////////////////////////////////////
+void printASTTreeDebug(AST *a) {
+	printASTTreeRecursiveDebug(0, a, -1);
+	printEndl();
+}
 
-void printASTChildsDebug(int level, AST *a) {
+void printASTTreeRecursiveDebug(int level, AST *a, int index) {
 	//cout << "Debug: " << endl;
 	int i = 0;
+	printASTDebug(level, a, index);
+	level++;
 	while (child(a, i)) {
-		printASTDebug(level, child(a, i), i);
-		printASTChildsDebug(level + 1, child(a, i));
+		printASTTreeRecursiveDebug(level + 1, child(a, i), i);
 		++i;
 	}
 }
@@ -334,19 +408,6 @@ void printASTDebug(int level, AST *a, int index) {
 void printSlopeDebug(slope slopeX) {
 	cout << "Debug: " << " - k " << slopeX.kind << " ";
 	cout << "l " << slopeX.length << endl;
-}
-
-////Evaluate Number Espression //// ///////////////////////////////////
-
-int evaluateNumberExpression(AST *a) {
-	if(a->kind == "intconst") 
-		return intFromString(a->text);
-	else if (a->kind == "+") 
-		return evaluateNumberExpression(child(a, 0)) + evaluateNumberExpression(child(a, 1));
-	else {
-		//cout << "Debug: variable name: " << a->text << " value: " << variableRepository[a->text] << endl;
-		return variableRepository[a->text];
-	}
 }
 
 ////Funcions Auxiliars//// //////////////////////////////////////////////
@@ -404,7 +465,7 @@ slope createSlopeDown(int lengthX) {
 	return slopeX;
 }
 
-//////////////////////////////////////////////////////////////////////////
+//// Tokens //// //// //// //// //// //// //// //// //// //// //// ////
 
 >>
 
