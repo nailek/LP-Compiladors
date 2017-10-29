@@ -1,0 +1,18 @@
+M1 is 1*/;2*-;3*\
+M2 is 3*/;4*-;3*\
+M12 is #M1;#M2
+
+M4 is Peak(2,4,2)
+M5 is Valley(3,4,3)
+
+Match(#M4,#M5)
+
+Height(#M12)
+
+commit -m "Peak Valley. \n Easier way of adding slopes to a mountain definition. \n evaluatedNumberExpression evaluates numbers (intconst) and number variables. \n Mountains passed as reference not value. \n PrintASTDebug prints the hole tree with levels."
+
+git commit -m "Peak Valley. 
+Easier way of adding slopes to a mountain definition. 
+evaluatedNumberExpression evaluates numbers (intconst) and number variables. 
+Mountains passed as reference not value. 
+PrintASTDebug prints the hole tree with levels."

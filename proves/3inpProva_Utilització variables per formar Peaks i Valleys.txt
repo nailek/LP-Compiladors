@@ -9,4 +9,11 @@ M5 is Valley(3,4,3)
 
 M6 is #M4;#M5
 
-M7 is #M7;Peak(k,k+1,k)
+k is 2
+n is 4
+
+M7 is #M7;Peak(k,n+1,k)
+
+M8 is #M8;Peak(n,k+1+2+3,k)
+
+M9 is #M9;Valley(n,k+1+2+3,k)
