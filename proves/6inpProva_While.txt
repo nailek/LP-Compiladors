@@ -1,0 +1,16 @@
+M1 is 1*/;2*-;3*\
+M2 is 3*/;4*-;3*\
+
+M12 is #M1;#M2
+
+M2 is #M2;5*/;5*-;5*\
+
+M3 is 1*/;1*-;1*\
+
+k is 1
+
+while (Height(#M3) < 10)
+	Draw(#M3)
+	k is k + 1
+	M3 is #M3;Peak(k+k,k+1,k+k)
+endwhile

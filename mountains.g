@@ -39,6 +39,14 @@ typedef struct {
 typedef struct {
 	string id;
 	list<slope> def;
+	int length() {
+		std::list<slope>::iterator it;
+		int lengthX = 0;
+		for (it=def.begin(); it != def.end(); ++it) {
+			lengthX += (*it).length;
+		}
+		return lengthX;
+	}
 } mountain;
 
 map<string,mountain> mountainRepository;
@@ -55,10 +63,12 @@ typedef struct {
 void treatExpression(AST*);
 bool evaluateAssignationExpression(AST*);
 bool evaluateIfExpression(AST*);
+bool evaluateWhileExpression(AST*); 
 bool evaluateBoolExpression(AST*);
 int evaluateNumberExpression(AST *a);
 void evaluateCallExpression(AST *a);
 
+mountain createMountain(string id, AST *a);
 void createMountainRecursive(mountain& mountainX, AST *a);
 
 slope createSlopeUp(int lengthX);
@@ -74,9 +84,11 @@ void printASTTreeDebug(AST *a);
 void printASTTreeRecursiveDebug(int level, AST *a, int index);
 void printASTDebug(int level, AST *a, int index);
 void printSlopeDebug(slope);
+void printMountainRepository();
 void printMountainPretty(mountain& mountainX);
+void printMountainDefPretty(mountain& mountainX);
 void printMountain(mountain&);
-void printMountainDef(list<slope>& mountainDef);
+void printMountainDef(mountain& mountainX);
 
 //FuncionsAuxiliars
 void printEndl();
@@ -172,6 +184,10 @@ int main() {
   ANTLR(mountains(&root), stdin);
   ASTPrint(root);
   treatExpression(root);
+
+  printEndl();
+
+  printMountainRepository();
 }
 
 void treatExpression(AST *a) {
@@ -184,7 +200,8 @@ void treatExpression(AST *a) {
 				evaluateAssignationExpression(child(a, inst));
 			else if (childKind == "if") 
 				evaluateIfExpression(child(a, inst));
-			else if (childKind == "wihle") ;
+			else if (childKind == "while")
+				evaluateWhileExpression(child(a, inst));
 			else if (childKind == "Draw")
 				evaluateCallExpression(child(a, inst));
 		}
@@ -199,27 +216,31 @@ void treatExpression(AST *a) {
 
 bool evaluateAssignationExpression(AST *a) {
 	//Guardar num!!!
-		//printASTTreeDebug(a);
 	if(child(a, 1)->kind == "intconst") {
+		//printASTTreeDebug(a);
 		variableRepository[child(a, 0)->text] = intFromString(child(a, 1)->text);
+		//cout << "Debug: id: " << child(a, 0)->text << "  value: " << intFromString(child(a, 1)->text) << "  value map: " << variableRepository[child(a, 0)->text] << endl;
+	}
+	else if(child(a, 1)->kind == "+") {
+		//printASTTreeDebug(a);
+		variableRepository[child(a, 0)->text] = evaluateNumberExpression(child(a, 1));
 		//cout << "Debug: id: " << child(a, 0)->text << "  value: " << intFromString(child(a, 1)->text) << "  value map: " << variableRepository[child(a, 0)->text] << endl;
 	}
 	else {
 		//Assignation of mountain
 		AST *id = child(a, 0);
 		mountain mountainX;
-		mountainX.id = id->text;
-		createMountainRecursive(mountainX, child(a,1));
+		mountainX = createMountain(id->text, child(a,1));
 
 		mountainRepository[mountainX.id] = mountainX; 
-
-		printMountain(mountainX);
-		printMountainPretty(mountainX);
-
-		printMountainHeight(mountainX);
-
-			//printMountainDef(mountainX);
 	}
+}
+
+mountain createMountain(string id, AST *a) {
+	mountain mountainX;
+	createMountainRecursive(mountainX, a);
+	mountainX.id = id;
+	return mountainX;
 }
 
 void createMountainRecursive(mountain& mountainX, AST *a) {
@@ -292,6 +313,33 @@ int calculateMountainHeight (mountain& mountainX) {
 	return top + abs(bottom);
 }
 
+int calculateMountainStartHeight (mountain& mountainX) {
+	int top = 0, index = 0, bottom = 0, start = 0; 
+	std::list<slope>::iterator it;
+	for (it=mountainX.def.begin(); it != mountainX.def.end(); ++it) {
+		//printSlopeDebug(*it);
+		int sLength = (*it).length;
+		//cout << "Debug: k: " << (*it).kind << " l: " << sLength << " t: " << top << " i: " << index << " b: " << bottom << endl;
+		if((*it).kind == "/") {
+			index += sLength;
+			if(top <= index) {
+				top = index;
+
+				//cout << "Debug:  t: " << top << endl;
+			}
+		}
+		else if((*it).kind == "\\") {
+			index -= sLength;
+			if(bottom >= index) {
+				bottom = index;
+				//cout << "Debug:            b: "  << bottom << endl;
+			}
+		}		
+		//cout << "Debug:       i: " << index << endl;	
+	}
+	return top;
+}
+
 //// Evaluate If Espression //// ///////////////////////////////////
 
 bool evaluateIfExpression(AST *a) {
@@ -305,9 +353,23 @@ bool evaluateIfExpression(AST *a) {
 	printEndl();
 }
 
+//// Evaluate While Espression //// ////////////////////////////////
+
+bool evaluateWhileExpression(AST *a) {
+	//printASTTreeDebug(a);
+	while(evaluateBoolExpression(child(a, 0))) {
+		//cout << "Debug: k: " << variableRepository["k"] << endl;
+		//cout << "Debug: if: true" << endl;
+		treatExpression(child(a, 1));
+	} 
+	//cout << "Debug: if: false" << endl;
+	//printEndl();
+}
+
 //// Evaluate Bool Espression //// /////////////////////////////////
 
 bool evaluateBoolExpression(AST* a) {
+	//printASTTreeDebug(a);
 	int child1, child2;
 	if (a->kind == "OR")
 		return evaluateBoolExpression(child(a, 0)) || evaluateBoolExpression(child(a, 1));
@@ -316,6 +378,22 @@ bool evaluateBoolExpression(AST* a) {
 	else if (a->kind == "==") {
 		//printASTTreeDebug(a);
 		return (evaluateNumberExpression(child(a, 0)) == evaluateNumberExpression(child(a, 1)));
+	}
+	else if (a->kind == ">") {
+		//printASTTreeDebug(a);
+		return (evaluateNumberExpression(child(a, 0)) > evaluateNumberExpression(child(a, 1)));
+	}
+	else if (a->kind == "<") {
+		//printASTTreeDebug(a);
+		return (evaluateNumberExpression(child(a, 0)) < evaluateNumberExpression(child(a, 1)));
+	}
+	else if (a->kind == ">=") {
+		//printASTTreeDebug(a);
+		return (evaluateNumberExpression(child(a, 0)) >= evaluateNumberExpression(child(a, 1)));
+	}
+	else if (a->kind == "<=") {
+		//printASTTreeDebug(a);
+		return (evaluateNumberExpression(child(a, 0)) <= evaluateNumberExpression(child(a, 1)));
 	}
 	else 
 		return evaluateNumberExpression(a);
@@ -349,36 +427,94 @@ int evaluateNumberExpression(AST *a) {
 
 void evaluateCallExpression(AST *a) {
 	if(a->kind == "Draw") {
-		printMountain(mountainRepository[child(a, 0)->text]);
+		mountain mountainX = createMountain(child(a, 0)->text, child(a, 0));
+		printMountainDefPretty(mountainX);
 	}
 }
 
 //// Prints //// ////////////////////////////////////////////////
+void printMountainRepository() {
+	for(std::map<string,mountain>::iterator it = mountainRepository.begin(); it != mountainRepository.end(); ++it) {
+		//printMountain(it->second);
+		printMountainPretty(it->second);
+		//printMountainDef(mountainX);
+	}
+		
+}
+
 void printMountainHeight(mountain& mountainX) {
 	cout << "l'altitut final de " << mountainX.id;
-	cout << " és: " << calculateMountainHeight(mountainX) << endl << endl;
+	cout << " és: " << calculateMountainHeight(mountainX) << endl;
 }
 
 void printMountainPretty(mountain& mountainX) {
-	//Matriu chars
+	printMountainHeight(mountainX);
+	printMountainDefPretty(mountainX);
+}
+
+void printMountainDefPretty(mountain& mountainX) {
+	int heightX = calculateMountainHeight(mountainX) + 1;
+	int lengthX = mountainX.length();
+	char mountainPrint[heightX][lengthX];
+
+	for(int i = 0; i < heightX; ++i) {
+		for(int j = 0; j < lengthX; ++j){
+			mountainPrint[i][j] = ' ';
+		}
+	}
+	int i = calculateMountainStartHeight(mountainX);
+	int j = 0;
+	std::list<slope>::iterator it;
+
+	//cout << "Debug: l: " << lengthX << " h: " << heightX << endl;
+	for (it=mountainX.def.begin(); it != mountainX.def.end(); ++it) {
+		if(it->kind == "/") {
+			for (int k = 0; k < (*it).length; ++k) {
+				//cout << "Debug: / i: " << i << " j: " << j << endl;
+				mountainPrint[i][j] = '/';
+				i--;
+				j++;
+			}
+		}
+		else if(it->kind == "\\") {
+			for (int k = 0; k < (*it).length; ++k) {
+				i++;
+				//cout << "Debug: \\ i: " << i << " j: " << j << endl;
+				mountainPrint[i][j] = '\\';
+				j++;
+			}
+		}
+		else if(it->kind == "-") { 
+			for (int k = 0; k < (*it).length; ++k) {
+				//cout << "Debug: - i: " << i << " j: " << j << endl;
+				mountainPrint[i][j] = '-';
+				j++;
+			}
+		}
+	}
+
+	for(int i = 0; i < heightX; ++i) {
+		for(int j = 0; j < lengthX; ++j){
+			cout << mountainPrint[i][j];
+		}
+		printEndl();
+	}
+	printEndl();
 }
 
 void printMountain(mountain& mountainX) {
-  cout << "Mountain: " << mountainX.id << endl;
-  std::list<slope>::iterator it;
-  for (it=mountainX.def.begin(); it != mountainX.def.end(); ++it)
-	  for (int i = 0; i < (*it).length; ++i)
-	  	cout << (*it).kind;
-  printEndl();
+	printMountainHeight(mountainX);
+	printMountainDef(mountainX);
 }
 
-void printMountainDef(list<slope>& mountainDef) {
-  cout << "Mountain: X" << endl;
-  std::list<slope>::iterator it;
-  for (it=mountainDef.begin(); it != mountainDef.end(); ++it)
-	  for (int i = 0; i < (*it).length; ++i)
-	  	cout << (*it).kind;
-  printEndl();
+void printMountainDef(mountain& mountainX) {
+	list<slope> mountainDef = mountainX.def;
+	std::list<slope>::iterator it;
+	for (it=mountainDef.begin(); it != mountainDef.end(); ++it)
+		for (int i = 0; i < (*it).length; ++i)
+			cout << (*it).kind;
+	printEndl();
+	printEndl();
 }
 
 //// Funcions Debugar //// ///////////////////////////////////////
@@ -482,7 +618,7 @@ slope createSlopeDown(int lengthX) {
 #token AND "AND"
 #token OR "OR "
 
-#token COMPARE_SYMBOL "== | < | >"
+#token COMPARE_SYMBOL "== | < | > | <= | >="
 #token SUM "\+"
 
 #token PEAK "Peak"
@@ -511,9 +647,13 @@ mountains: ((assign | condic | draw | iter | complete ) << #0 = createASTlist(_s
 
 //LEFTBRAKE! RIGHTBRAKE!
 // //
-assign:  ID IS^ assign_value;
+//assign:  ID IS^ assign_value;
+assign:  ID IS^ assignate;
 
-assign_value: NUM ( | STAR^ SLOPE (CONCATE^ muntanya)*)
+assignate: (assign_value | (ID (SUM^ NUM)));
+
+assign_value: NUM ( 
+	| STAR^ SLOPE (CONCATE^ muntanya)*)
  	| (id_muntanyes | peak_valley) (CONCATE^ muntanya)*
  	;
 

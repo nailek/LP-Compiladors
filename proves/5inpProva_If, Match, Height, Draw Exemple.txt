@@ -1,0 +1,13 @@
+M1 is 1*/;2*-;3*\
+M2 is 3*/;4*-;3*\
+M12 is #M1;#M2
+
+M4 is Peak(2,4,2)
+M5 is Valley(3,4,3)
+
+if (Match(#M4,#M5) OR Height(#M12) == 6) 
+	M6 is #M4;#M5
+	Draw(#M6)
+endif
+
+Draw(1*/;2*-;3*\)

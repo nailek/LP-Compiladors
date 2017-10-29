@@ -4,7 +4,7 @@ ALLOBJS = *.o
 
 ALLDRIVOBS = *.exe *.prova
 
-all: dist-clean mountains
+all: clean-all mountains
 
 allNew: clear all
 
@@ -14,11 +14,12 @@ mountains:
 	dlg -ci parser.dlg scan.c
 	g++ -w -o mountains mountains.c scan.c err.c -I/home/nailek/Documents/Q9/LP/pccts/h
 
-clear: clean dist-clean
+clear: 
+	clear && clear
 
 clean:
 	$(RM) $(ALLOBJS) mountains.c scan.c err.c parser.dlg tokens.h mode.h
 
-dist-clean: clean
+clean-all: clean
 	$(RM) $(ALLDRIVOBS)
 	$(RM) mountains
