@@ -188,8 +188,6 @@ int main() {
   ASTPrint(root);
   treatExpression(root);
 
-  printEndl();
-
   printMountainRepository();
 }
 
@@ -479,7 +477,9 @@ int evaluateNumberExpression(AST *a) {
 
 void evaluateCallExpression(AST *a) {
 	if(a->kind == "Draw") {
-		printMountainDefPretty(mountainRepository[child(a, 0)->text]);
+		//printASTTreeDebug(a);
+		mountain mountainX = createMountain("",child(a,0));
+		printMountainDefPretty(mountainX);
 		//cout << "Debug: Finished Drawing" << endl;
 	}
 	else if(a->kind == "Complete") {
@@ -551,8 +551,8 @@ void complete(mountain& mountainX) {
 
 //// Prints //// ////////////////////////////////////////////////
 void printMountainRepository() {
-	for(std::map<string,mountain>::iterator it = mountainRepository.begin(); it != mountainRepository.end(); ++it) {
-		printMountain(it->second);	
+	for(std::map<string,mountain>::iterator it = ++mountainRepository.begin(); it != mountainRepository.end(); ++it) {
+		//printMountain(it->second);	
 		printMountainPretty(it->second);
 		//printMountainDef(mountainX);
 	}
@@ -570,8 +570,8 @@ void printMountainPretty(mountain& mountainX) {
 }
 
 void printMountainDefPretty(mountain& mountainX) {
-	cout << "Debug: hp: " << calculateMountainPrintingHeight(mountainX) << endl;
-	cout << "Debug: h: " << calculateMountainHeight(mountainX) << endl;
+	//cout << "Debug: hp: " << calculateMountainPrintingHeight(mountainX) << endl;
+	//cout << "Debug: h: " << calculateMountainHeight(mountainX) << endl;
 	int heightX = calculateMountainPrintingHeight(mountainX);
 	int lengthX = mountainX.length();
 	char mountainPrint[heightX][lengthX];
