@@ -76,6 +76,7 @@ slope createSlopeCim(int lengthX);
 slope createSlopeDown(int lengthX);
 
 int calculateMountainHeight(mountain& mountainX);
+int calculateMountainPrintingHeight(mountain& mountainX);
 bool wellformed(mountain& mountainX);
 void complete(mountain& mountainX);
 
@@ -315,6 +316,47 @@ int calculateMountainHeight (mountain& mountainX) {
 	return top + abs(bottom);
 }
 
+int calculateMountainPrintingHeight (mountain& mountainX) {
+	int top = 0, index = 0, bottom = 0; 
+
+	int hasTopSymbol, hasBottomSymbol;
+	hasTopSymbol = 0; 
+	hasBottomSymbol = 0;
+
+	std::list<slope>::iterator it;
+	for (it=mountainX.def.begin(); it != mountainX.def.end(); ++it) {
+		//printSlopeDebug(*it);
+		int sLength = (*it).length;
+		//cout << "Debug: k: " << (*it).kind << " l: " << sLength << " t: " << top << " i: " << index << " b: " << bottom << endl;
+		if((*it).kind == "/") {
+			index += sLength;
+			if(top <= index) {
+				top = index;
+				if(index > hasTopSymbol) hasTopSymbol = 0;
+				//cout << "Debug:  t: " << top << endl;
+			}
+		}
+		else if((*it).kind == "\\") {
+			index -= sLength;
+			if(bottom >= index) {
+				bottom = index;
+				if(index < hasBottomSymbol) hasBottomSymbol = 0;
+				//cout << "Debug:            b: "  << bottom << endl;
+			}
+		}
+		else if((*it).kind == "-") {
+			if(top == index) hasTopSymbol = index;
+			if(top == index) hasTopSymbol = index;
+			else if(bottom == index) hasBottomSymbol = index;
+		}
+		//cout << "Debug:       i: " << index << endl;	
+	}
+	int extraLines = 1;
+	//if(hasTopSymbol) extraLines++;
+	if(hasBottomSymbol) extraLines++;
+	return top + abs(bottom) + extraLines;
+}
+
 int calculateMountainStartHeight (mountain& mountainX) {
 	int top = 0, index = 0, bottom = 0, start = 0; 
 	std::list<slope>::iterator it;
@@ -510,7 +552,7 @@ void complete(mountain& mountainX) {
 //// Prints //// ////////////////////////////////////////////////
 void printMountainRepository() {
 	for(std::map<string,mountain>::iterator it = mountainRepository.begin(); it != mountainRepository.end(); ++it) {
-		//printMountain(it->second);	
+		printMountain(it->second);	
 		printMountainPretty(it->second);
 		//printMountainDef(mountainX);
 	}
@@ -528,7 +570,9 @@ void printMountainPretty(mountain& mountainX) {
 }
 
 void printMountainDefPretty(mountain& mountainX) {
-	int heightX = calculateMountainHeight(mountainX) + 1;
+	cout << "Debug: hp: " << calculateMountainPrintingHeight(mountainX) << endl;
+	cout << "Debug: h: " << calculateMountainHeight(mountainX) << endl;
+	int heightX = calculateMountainPrintingHeight(mountainX);
 	int lengthX = mountainX.length();
 	char mountainPrint[heightX][lengthX];
 
@@ -540,21 +584,22 @@ void printMountainDefPretty(mountain& mountainX) {
 	int i = calculateMountainStartHeight(mountainX);
 	int j = 0;
 	std::list<slope>::iterator it;
+	std::list<slope>::iterator itPrev;
 
 	//cout << "Debug: l: " << lengthX << " h: " << heightX << endl;
 	for (it=mountainX.def.begin(); it != mountainX.def.end(); ++it) {
 		if(it->kind == "/") {
 			for (int k = 0; k < (*it).length; ++k) {
 				//cout << "Debug: / i: " << i << " j: " << j << endl;
+				if(!j == 0 && mountainPrint[i][j-1] != '\\') i--;
 				mountainPrint[i][j] = '/';
-				i--;
 				j++;
 			}
 		}
 		else if(it->kind == "\\") {
 			for (int k = 0; k < (*it).length; ++k) {
 				//cout << "Debug: \\ i: " << i << " j: " << j << endl;
-				i++;
+				if(!j == 0 && mountainPrint[i][j-1] != '/') i++;
 				mountainPrint[i][j] = '\\';
 				j++;
 			}
@@ -562,6 +607,10 @@ void printMountainDefPretty(mountain& mountainX) {
 		else if(it->kind == "-") { 
 			for (int k = 0; k < (*it).length; ++k) {
 				//cout << "Debug: - i: " << i << " j: " << j << endl;
+				if(!j == 0) {
+					if(mountainPrint[i][j-1] == '/') i--;
+					if(mountainPrint[i][j-1] == '\\') i++;
+				}
 				mountainPrint[i][j] = '-';
 				j++;
 			}
